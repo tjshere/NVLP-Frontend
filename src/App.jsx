@@ -1,72 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import toast, { Toaster } from 'react-hot-toast';
 import StudentDashboard from './components/StudentDashboard';
+import { SensoryProvider, useSensory } from './context/SensoryContext';
 import api from './api';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [courses, setCourses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Login Form Component with React Hook Form
+const LoginForm = ({ onLoginSuccess }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { darkMode } = useSensory();
 
-  // Login form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm({
+    mode: 'onBlur', // Validate on blur
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
-  // Sensory preferences state (lifted from SensoryPanel)
-  const [darkMode, setDarkMode] = useState(false);
-  const [lowAudio, setLowAudio] = useState(false);
-  const [reduceAnimations, setReduceAnimations] = useState(false);
-
-  // Check authentication and fetch data on mount
-  useEffect(() => {
-    const initializeApp = async () => {
-      if (api.isAuthenticated()) {
-        try {
-          setIsLoading(true);
-          
-          // Fetch user profile and courses in parallel
-          const [userProfile, coursesData] = await Promise.all([
-            api.getUserProfile(),
-            api.getCourses(),
-          ]);
-
-          setUser(userProfile);
-          setCourses(coursesData);
-          setIsAuthenticated(true);
-
-          // Initialize sensory preferences from user profile
-          if (userProfile.preferences) {
-            setDarkMode(userProfile.preferences.dark_mode || false);
-            setLowAudio(userProfile.preferences.low_audio || false);
-            setReduceAnimations(userProfile.preferences.reduce_animations || false);
-          }
-        } catch (err) {
-          console.error('Failed to fetch data:', err);
-          setError(err.message);
-          // If fetch fails, logout (token might be invalid)
-          api.logout();
-          setIsAuthenticated(false);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setIsLoading(false);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  // Handle login submission
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError('');
+  const onSubmit = async (data) => {
     setIsLoading(true);
 
     try {
-      await api.login(email, password);
+      await api.login(data.email, data.password);
       
       // Fetch user data after successful login
       const [userProfile, coursesData] = await Promise.all([
@@ -74,184 +35,293 @@ function App() {
         api.getCourses(),
       ]);
 
-      setUser(userProfile);
-      setCourses(coursesData);
-      setIsAuthenticated(true);
-
-      // Initialize sensory preferences from user profile
-      if (userProfile.preferences) {
-        setDarkMode(userProfile.preferences.dark_mode || false);
-        setLowAudio(userProfile.preferences.low_audio || false);
-        setReduceAnimations(userProfile.preferences.reduce_animations || false);
-      }
-
-      setEmail('');
-      setPassword('');
+      onLoginSuccess(userProfile, coursesData);
+      toast.success('Login successful!', { position: 'top-center' });
     } catch (err) {
       console.error('Login failed:', err);
-      setLoginError(err.message || 'Login failed. Please check your credentials.');
+      
+      // Map specific Django backend error codes to user-friendly messages
+      let errorMessage = 'Login failed. Please check your credentials.';
+      
+      if (err.status === 401) {
+        errorMessage = 'Invalid email or password.';
+      } else if (err.status === 400) {
+        // Check for specific field errors
+        if (err.data?.email) {
+          setError('email', { type: 'server', message: err.data.email[0] || 'Invalid email' });
+        }
+        if (err.data?.password) {
+          setError('password', { type: 'server', message: err.data.password[0] || 'Invalid password' });
+        }
+        if (err.data?.non_field_errors) {
+          errorMessage = err.data.non_field_errors[0];
+        }
+      } else if (err.status === 429) {
+        errorMessage = 'Too many login attempts. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Show toast for general errors
+      if (!err.data?.email && !err.data?.password) {
+        toast.error(errorMessage, { position: 'top-center', duration: 4000 });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    api.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-    setCourses([]);
-    // Reset sensory preferences
-    setDarkMode(false);
-    setLowAudio(false);
-    setReduceAnimations(false);
-  };
-
-  // Handle sensory preference updates and persist to backend
-  const handleSensoryUpdate = async (preference, value) => {
-    // Store previous value for rollback on error
-    let previousValue;
-    
-    // Optimistically update local state immediately for responsive UI
-    switch (preference) {
-      case 'dark_mode':
-        previousValue = darkMode;
-        setDarkMode(value);
-        break;
-      case 'low_audio':
-        previousValue = lowAudio;
-        setLowAudio(value);
-        break;
-      case 'reduce_animations':
-        previousValue = reduceAnimations;
-        setReduceAnimations(value);
-        break;
-      default:
-        console.warn(`Unknown preference: ${preference}`);
-        return;
-    }
-
-    try {
-      // Persist to backend
-      const updatedPreferences = {
-        ...user.preferences,
-        [preference]: value,
-      };
-
-      await api.patchUserProfile({ preferences: updatedPreferences });
-
-      // Update local user object with new preferences
-      setUser((prevUser) => ({
-        ...prevUser,
-        preferences: updatedPreferences,
-      }));
-
-      console.log(`✓ Saved ${preference} = ${value}`);
-    } catch (err) {
-      console.error(`Failed to update ${preference}:`, err);
-      
-      // Rollback state to previous value on error
-      switch (preference) {
-        case 'dark_mode':
-          setDarkMode(previousValue);
-          break;
-        case 'low_audio':
-          setLowAudio(previousValue);
-          break;
-        case 'reduce_animations':
-          setReduceAnimations(previousValue);
-          break;
-      }
-      
-      // Optionally show error notification to user
-      console.error(`⚠️ Failed to save ${preference}. Changes reverted.`);
-    }
-  };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Login screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">NVLP</h1>
-          <p className="text-gray-600 text-center mb-8">Neurodivergent Virtual Learning Platform</p>
+  return (
+    <div className={`${darkMode ? 'dark' : ''}`}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center p-6 transition-colors duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md transition-colors duration-300">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 text-center transition-colors duration-300">
+            NVLP
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-center mb-8 transition-colors duration-300">
+            Neurodivergent Virtual Learning Platform
+          </p>
           
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                htmlFor="email" 
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300"
+              >
                 Email
               </label>
               <input
                 type="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address',
+                  },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-300 dark:bg-gray-700 dark:text-gray-100 ${
+                  errors.email 
+                    ? 'border-red-500 dark:border-red-400' 
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
                 placeholder="Enter your email"
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
+            {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label 
+                htmlFor="password" 
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300"
+              >
                 Password
               </label>
               <input
                 type="password"
                 id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters',
+                  },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-300 dark:bg-gray-700 dark:text-gray-100 ${
+                  errors.password 
+                    ? 'border-red-500 dark:border-red-400' 
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
                 placeholder="Enter your password"
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-
-            {loginError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {loginError}
-              </div>
-            )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Main App Component
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [courses, setCourses] = useState([]);
+  
+  // Separate loading states for better UX
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+  
+  const [error, setError] = useState(null);
+  
+  const isMountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Check authentication and fetch data on mount
+  useEffect(() => {
+    const initializeApp = async () => {
+      if (api.isAuthenticated()) {
+        try {
+          setIsLoadingUser(true);
+          setIsLoadingCourses(true);
+          
+          // Fetch user profile and courses in parallel
+          const [userProfile, coursesData] = await Promise.all([
+            api.getUserProfile(),
+            api.getCourses(),
+          ]);
+
+          if (isMountedRef.current) {
+            setUser(userProfile);
+            setCourses(coursesData);
+            setIsAuthenticated(true);
+          }
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+          if (isMountedRef.current) {
+            setError(err.message);
+            setIsAuthenticated(false);
+            
+            // Show error toast
+            toast.error(err.message || 'Failed to load your data', {
+              position: 'top-center',
+              duration: 4000,
+            });
+          }
+          api.logout();
+        } finally {
+          if (isMountedRef.current) {
+            setIsLoadingUser(false);
+            setIsLoadingCourses(false);
+            setIsInitializing(false);
+          }
+        }
+      } else {
+        if (isMountedRef.current) {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  // Handle successful login
+  const handleLoginSuccess = (userProfile, coursesData) => {
+    if (isMountedRef.current) {
+      setUser(userProfile);
+      setCourses(coursesData);
+      setIsAuthenticated(true);
+      setError(null);
+    }
+  };
+
+  // Handle logout - stable reference with useCallback for SensoryProvider
+  const handleLogout = useCallback(() => {
+    api.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+    setCourses([]);
+    setError(null);
+    
+    toast.success('Logged out successfully', {
+      position: 'bottom-right',
+    });
+  }, []); // No dependencies - logout logic is self-contained
+
+  // Show minimal loading screen during initialization
+  if (isInitializing) {
+    return (
+      <SensoryProvider user={null} onAuthFailure={handleLogout}>
+        <InitializingScreen />
+      </SensoryProvider>
     );
   }
 
-  // Dashboard screen (authenticated)
+  // Login screen
+  if (!isAuthenticated) {
+    return (
+      <SensoryProvider user={null} onAuthFailure={handleLogout}>
+        <Toaster />
+        <LoginForm onLoginSuccess={handleLoginSuccess} />
+      </SensoryProvider>
+    );
+  }
+
+  // Dashboard screen (authenticated) - pass handleLogout for centralized auth failure
   return (
-    <div className={darkMode ? 'dark' : ''}>
-      <StudentDashboard 
-        user={user} 
-        courses={courses} 
+    <SensoryProvider user={user} onAuthFailure={handleLogout}>
+      <AppContent 
+        user={user}
+        courses={courses}
+        isLoadingUser={isLoadingUser}
+        isLoadingCourses={isLoadingCourses}
         onLogout={handleLogout}
-        darkMode={darkMode}
-        lowAudio={lowAudio}
-        reduceAnimations={reduceAnimations}
-        onSensoryUpdate={handleSensoryUpdate}
       />
-    </div>
+    </SensoryProvider>
   );
 }
+
+// App Content with Sensory Context
+const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout }) => {
+  const { darkMode, reduceAnimations } = useSensory();
+  
+  return (
+    <>
+      <Toaster />
+      <div className={`${darkMode ? 'dark' : ''} ${reduceAnimations ? 'reduce-motion' : ''}`}>
+        <StudentDashboard 
+          user={user} 
+          courses={courses}
+          isLoadingUser={isLoadingUser}
+          isLoadingCourses={isLoadingCourses}
+          onLogout={onLogout}
+        />
+      </div>
+    </>
+  );
+};
+
+// Initializing Screen Component
+const InitializingScreen = () => {
+  const { darkMode, reduceAnimations } = useSensory();
+  
+  return (
+    <div className={`${darkMode ? 'dark' : ''} ${reduceAnimations ? 'reduce-motion' : ''}`}>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Loading...</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default App;
