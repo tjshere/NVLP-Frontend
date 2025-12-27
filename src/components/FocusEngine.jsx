@@ -422,14 +422,14 @@ const FocusEngine = ({ tasks = [] }) => {
         </div>
         
         {/* Timer Circle */}
-        <div className="relative w-64 h-64 mx-auto mb-6">
+        <div className="relative w-72 h-72 mx-auto mb-6">
           {/* Progress Ring (only if animations enabled) */}
           {!reduceAnimations && (
-            <svg className="w-full h-full transform -rotate-90">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 256 256">
               <circle
                 cx="128"
                 cy="128"
-                r="120"
+                r="116"
                 stroke="currentColor"
                 strokeWidth="8"
                 fill="none"
@@ -438,12 +438,12 @@ const FocusEngine = ({ tasks = [] }) => {
               <circle
                 cx="128"
                 cy="128"
-                r="120"
+                r="116"
                 stroke="currentColor"
                 strokeWidth="8"
                 fill="none"
-                strokeDasharray={`${2 * Math.PI * 120}`}
-                strokeDashoffset={`${2 * Math.PI * 120 * (1 - getProgress() / 100)}`}
+                strokeDasharray={`${2 * Math.PI * 116}`}
+                strokeDashoffset={`${2 * Math.PI * 116 * (1 - getProgress() / 100)}`}
                 className={`transition-all duration-1000 ${
                   mode === 'work'
                     ? 'text-red-500'
