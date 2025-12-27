@@ -37,7 +37,9 @@ const TaskBreaker = () => {
     try {
       setIsLoading(true);
       const tasksData = await api.getTasks();
-      setTasks(tasksData);
+      // Handle paginated response from Django REST Framework
+      const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData.results || []);
+      setTasks(tasksList);
     } catch (error) {
       console.error('Failed to load tasks:', error);
       toast.error('Failed to load tasks');
