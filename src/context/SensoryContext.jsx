@@ -48,19 +48,25 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
 
   // Apply dark mode class to document root for Tailwind CSS
   useEffect(() => {
+    console.log('🎨 Dark mode state changed:', darkMode);
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      console.log('✅ Added "dark" class to document');
     } else {
       document.documentElement.classList.remove('dark');
+      console.log('✅ Removed "dark" class from document');
     }
   }, [darkMode]);
 
   // Apply reduce-motion class to document root
   useEffect(() => {
+    console.log('🎬 Reduce animations state changed:', reduceAnimations);
     if (reduceAnimations) {
       document.documentElement.classList.add('reduce-motion');
+      console.log('✅ Added "reduce-motion" class to document');
     } else {
       document.documentElement.classList.remove('reduce-motion');
+      console.log('✅ Removed "reduce-motion" class from document');
     }
   }, [reduceAnimations]);
 
@@ -83,6 +89,14 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
         preferencesRef.current.reduce_animations !== newPrefs.reduce_animations
       );
       
+      console.log('🔍 User preferences effect triggered:', {
+        newPrefs,
+        currentRef: preferencesRef.current,
+        pendingRequests: pendingRequestsRef.current,
+        prefsChanged,
+        willUpdate: pendingRequestsRef.current === 0 && prefsChanged
+      });
+      
       // Only update if there are no pending requests AND preferences actually changed
       if (pendingRequestsRef.current === 0 && prefsChanged) {
         console.log('📥 Initializing preferences from user data:', newPrefs);
@@ -97,6 +111,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
   // Reset preferences on logout (when user becomes null)
   useEffect(() => {
     if (!user) {
+      console.log('🚪 Logout detected - resetting all preferences');
       setDarkMode(false);
       setLowAudio(false);
       setReduceAnimations(false);
@@ -134,40 +149,34 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
     let previousValue;
     const previousPreferences = { ...preferencesRef.current };
     
-    // Set saving status (only if mounted - memory leak prevention)
-    if (isMountedRef.current) {
-      setSavingStatus('saving');
-    }
+    // Set saving status
+    setSavingStatus('saving');
     
     // Update the ref synchronously with the new value (source of truth)
     // This prevents rapid toggle clicks from reading stale state
+    // Always update state - don't check isMountedRef (causes issues in React 19)
     switch (preference) {
       case 'dark_mode':
         previousValue = preferencesRef.current.dark_mode;
         preferencesRef.current.dark_mode = value;
-        if (isMountedRef.current) {
-          setDarkMode(value);
-        }
+        console.log(`🔄 Setting darkMode state to: ${value}`);
+        setDarkMode(value);
         break;
       case 'low_audio':
         previousValue = preferencesRef.current.low_audio;
         preferencesRef.current.low_audio = value;
-        if (isMountedRef.current) {
-          setLowAudio(value);
-        }
+        console.log(`🔄 Setting lowAudio state to: ${value}`);
+        setLowAudio(value);
         break;
       case 'reduce_animations':
         previousValue = preferencesRef.current.reduce_animations;
         preferencesRef.current.reduce_animations = value;
-        if (isMountedRef.current) {
-          setReduceAnimations(value);
-        }
+        console.log(`🔄 Setting reduceAnimations state to: ${value}`);
+        setReduceAnimations(value);
         break;
       default:
         console.warn(`Unknown preference: ${preference}`);
-        if (isMountedRef.current) {
-          setSavingStatus('idle');
-        }
+        setSavingStatus('idle');
         return;
     }
     
@@ -190,8 +199,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
       }
       
       // Show success feedback only for the latest request (race condition handling)
-      // Only update state if component is still mounted (memory leak prevention)
-      if (isMountedRef.current && currentRequestId === requestIdRef.current) {
+      if (currentRequestId === requestIdRef.current) {
         setSavingStatus('saved');
         
         // Show non-intrusive toast notification
@@ -205,7 +213,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
         
         // Reset status after 2 seconds, but only if no requests are pending
         const successTimeoutId = setTimeout(() => {
-          if (isMountedRef.current && pendingRequestsRef.current === 0) {
+          if (pendingRequestsRef.current === 0) {
             setSavingStatus('idle');
           }
         }, 2000);
@@ -244,8 +252,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
       }
       
       // Only rollback if this is still the latest request (race condition handling)
-      // Only update state if component is still mounted (memory leak prevention)
-      if (isMountedRef.current && currentRequestId === requestIdRef.current) {
+      if (currentRequestId === requestIdRef.current) {
         // Robust rollback: Restore entire previous state
         preferencesRef.current = previousPreferences;
         
@@ -275,7 +282,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
         
         // Reset status after 3 seconds, but only if no requests are pending
         const errorTimeoutId = setTimeout(() => {
-          if (isMountedRef.current && pendingRequestsRef.current === 0) {
+          if (pendingRequestsRef.current === 0) {
             setSavingStatus('idle');
           }
         }, 3000);
