@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Moon, Volume2, Film, Loader2, Check, AlertCircle, Lightbulb, PlayCircle, CheckCircle, User, Type, BookOpen, TextIcon } from 'lucide-react';
 import { useSensory } from '../context/SensoryContext';
 import { ProfileSummarySkeleton, CourseListSkeleton } from './Skeleton';
 import SmartText from './SmartText';
 import TaskBreaker from './TaskBreaker';
+import FocusEngine from './FocusEngine';
+import api from '../api';
 
 // --- COMPONENT 1: SENSORY PANEL (Refactored - Stateless with Context) ---
 const SensoryPanel = () => {
@@ -299,6 +301,31 @@ const StudentDashboard = ({
 }) => {
   const { darkMode } = useSensory();
   const studentName = user?.username || "Student";
+  const [tasks, setTasks] = useState([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+
+  // Load tasks for FocusEngine and TaskBreaker coordination
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      setIsLoadingTasks(true);
+      const tasksData = await api.getTasks();
+      const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData.results || []);
+      setTasks(tasksList);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  };
+
+  // Callback to refresh tasks when TaskBreaker updates them
+  const handleTasksChange = () => {
+    loadTasks();
+  };
 
   return (
     <div className={`min-h-screen flex flex-col p-6 transition-colors duration-300 ${
@@ -333,10 +360,13 @@ const StudentDashboard = ({
 
         {/* MAIN CONTENT */}
         <div className="lg:col-span-3 flex flex-col gap-6">
+           {/* Focus Engine - Pomodoro Timer */}
+           <FocusEngine tasks={tasks} />
+           
            <LearningPath courses={courses} isLoading={isLoadingCourses} />
            
            {/* Task Breaker - Executive Function Toolkit */}
-           <TaskBreaker />
+           <TaskBreaker onTasksChange={handleTasksChange} />
            
            <div className="bg-blue-600 dark:bg-blue-700 text-white p-6 rounded-xl shadow-lg flex items-center justify-between transition-colors duration-300">
               <div>

@@ -191,6 +191,51 @@ export const api = {
     return response.data;
   },
 
+  // Pomodoro Timer (Focus Engine)
+  // Get all timers for the authenticated user
+  getTimers: async () => {
+    const response = await axiosInstance.get('/ef/timer/');
+    return response.data;
+  },
+
+  // Get or create the user's default timer
+  getOrCreateTimer: async () => {
+    try {
+      const timers = await axiosInstance.get('/ef/timer/');
+      const timersList = Array.isArray(timers.data) ? timers.data : (timers.data.results || []);
+      
+      if (timersList.length > 0) {
+        return timersList[0]; // Return first timer
+      }
+      
+      // Create default timer if none exists
+      const newTimer = await axiosInstance.post('/ef/timer/', {
+        work_duration: 25,
+        break_duration: 5,
+        long_break_duration: 15,
+        cycles_to_long_break: 4,
+        current_status: 'idle',
+        session_start_time: null,
+      });
+      return newTimer.data;
+    } catch (error) {
+      console.error('Failed to get or create timer:', error);
+      throw error;
+    }
+  },
+
+  // Update timer settings
+  updateTimer: async (timerId, data) => {
+    const response = await axiosInstance.patch(`/ef/timer/${timerId}/`, data);
+    return response.data;
+  },
+
+  // Delete a timer
+  deleteTimer: async (timerId) => {
+    const response = await axiosInstance.delete(`/ef/timer/${timerId}/`);
+    return response.data;
+  },
+
   // Check if user is authenticated
   isAuthenticated: () => {
     return !!localStorage.getItem(TOKEN_KEY);

@@ -15,7 +15,7 @@ import SmartText from './SmartText';
  * - Responsive UI with dark mode support
  * - Smart Tags integration (bionic reading, dyslexic font, font size)
  */
-const TaskBreaker = () => {
+const TaskBreaker = ({ onTasksChange }) => {
   const { reduceAnimations } = useSensory();
   
   // State
@@ -84,6 +84,9 @@ const TaskBreaker = () => {
       setShowCreateForm(false);
       
       toast.success('Task created successfully!');
+      
+      // Notify parent component
+      if (onTasksChange) onTasksChange();
     } catch (error) {
       console.error('Failed to create task:', error);
       toast.error(error.message || 'Failed to create task');
@@ -125,6 +128,9 @@ const TaskBreaker = () => {
           duration: 3000,
         });
       }
+      
+      // Notify parent component
+      if (onTasksChange) onTasksChange();
     } catch (error) {
       console.error('Failed to update step:', error);
       // Rollback on error
@@ -145,6 +151,9 @@ const TaskBreaker = () => {
     try {
       await api.deleteTask(taskId);
       toast.success('Task deleted');
+      
+      // Notify parent component
+      if (onTasksChange) onTasksChange();
     } catch (error) {
       console.error('Failed to delete task:', error);
       // Rollback on error
