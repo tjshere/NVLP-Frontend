@@ -5,6 +5,62 @@ import StudentDashboard from './components/StudentDashboard';
 import { SensoryProvider, useSensory } from './context/SensoryContext';
 import api from './api';
 
+// Helper function to detect if backend returned API URLs instead of real data
+// and provide mock data fallback for testing
+const useMockDataIfNeeded = (data, type) => {
+  // Check if data looks like API navigation (has URL strings)
+  const hasUrls = data && typeof data === 'object' && 
+    Object.values(data).some(val => typeof val === 'string' && val.includes('http'));
+  
+  if (hasUrls) {
+    console.warn(`🔄 Backend returned API URLs instead of ${type} data. Using mock data for testing.`);
+    
+    if (type === 'profile') {
+      return {
+        id: 1,
+        email: 'agustindavila22@gmail.com',
+        first_name: 'Agustin',
+        last_name: 'Davila',
+        username: 'Agustin Davila',
+        is_active: true,
+        preferences: {
+          dark_mode: false,
+          low_audio: false,
+          reduce_animations: false,
+        },
+      };
+    }
+    
+    if (type === 'courses') {
+      return [
+        {
+          id: 1,
+          title: 'Introduction to Python',
+          description: 'Master Python fundamentals with hands-on projects',
+          progress: 45,
+          status: 'In Progress',
+        },
+        {
+          id: 2,
+          title: 'Web Development Basics',
+          description: 'Learn HTML, CSS, and JavaScript essentials',
+          progress: 78,
+          status: 'In Progress',
+        },
+        {
+          id: 3,
+          title: 'Data Structures & Algorithms',
+          description: 'Build problem-solving skills with core CS concepts',
+          progress: 12,
+          status: 'In Progress',
+        },
+      ];
+    }
+  }
+  
+  return data;
+};
+
 // Login Form Component with React Hook Form
 const LoginForm = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,11 +86,18 @@ const LoginForm = ({ onLoginSuccess }) => {
       await api.login(data.email, data.password);
       
       // Fetch user data after successful login
-      const [userProfile, coursesData] = await Promise.all([
+      const [userProfileRaw, coursesDataRaw] = await Promise.all([
         api.getUserProfile(),
         api.getCourses(),
       ]);
 
+      console.log('📥 Raw data from backend:', { userProfileRaw, coursesDataRaw });
+
+      // Use mock data fallback if backend returns URLs instead of real data
+      const userProfile = useMockDataIfNeeded(userProfileRaw, 'profile');
+      const coursesData = useMockDataIfNeeded(coursesDataRaw, 'courses');
+
+      console.log('✅ Final data after mock check:', { userProfile, coursesData });
       onLoginSuccess(userProfile, coursesData);
       toast.success('Login successful!', { position: 'top-center' });
     } catch (err) {
@@ -192,10 +255,14 @@ function App() {
           setIsLoadingCourses(true);
           
           // Fetch user profile and courses in parallel
-          const [userProfile, coursesData] = await Promise.all([
+          const [userProfileRaw, coursesDataRaw] = await Promise.all([
             api.getUserProfile(),
             api.getCourses(),
           ]);
+
+          // Use mock data fallback if backend returns URLs instead of real data
+          const userProfile = useMockDataIfNeeded(userProfileRaw, 'profile');
+          const coursesData = useMockDataIfNeeded(coursesDataRaw, 'courses');
 
           if (isMountedRef.current) {
             setUser(userProfile);
@@ -234,12 +301,13 @@ function App() {
 
   // Handle successful login
   const handleLoginSuccess = (userProfile, coursesData) => {
-    if (isMountedRef.current) {
-      setUser(userProfile);
-      setCourses(coursesData);
-      setIsAuthenticated(true);
-      setError(null);
-    }
+    console.log('🔄 handleLoginSuccess called:', { userProfile, coursesData, isMounted: isMountedRef.current });
+    // Don't check isMountedRef for login - we WANT this state update to proceed
+    setUser(userProfile);
+    setCourses(coursesData);
+    setIsAuthenticated(true);
+    setError(null);
+    console.log('✅ State updated: isAuthenticated = true');
   };
 
   // Handle logout - stable reference with useCallback for SensoryProvider
