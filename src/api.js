@@ -41,9 +41,8 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle timeout errors specifically
+    // Handle timeout errors
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      console.error('⏱️ Request timeout:', error);
       const timeoutError = {
         message: 'Request timeout. Please check your connection.',
         status: 0,
@@ -98,6 +97,8 @@ axiosInstance.interceptors.response.use(
     }
 
     // Format error for consistent handling
+
+    // Only format errors that have a response (actual HTTP errors)
     const formattedError = {
       message: error.response?.data?.message || 
                error.response?.data?.detail || 
@@ -105,6 +106,7 @@ axiosInstance.interceptors.response.use(
                'An unexpected error occurred',
       status: error.response?.status,
       data: error.response?.data,
+      isNetworkError: false, // Has response, so not a network error
     };
 
     return Promise.reject(formattedError);

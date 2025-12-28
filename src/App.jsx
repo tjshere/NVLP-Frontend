@@ -292,10 +292,19 @@ function App() {
           setIsLoadingUser(true);
           setIsLoadingCourses(true);
           
-          // Fetch user profile and courses in parallel
-          const [userProfileRaw, coursesDataRaw] = await Promise.all([
-            api.getUserProfile(),
-            api.getCourses(),
+          // Fetch user profile and courses in parallel, but handle errors individually
+          const [userProfileRaw, coursesDataRaw] = await Promise.allSettled([
+            api.getUserProfile().catch(err => {
+              console.warn('Failed to fetch user profile:', err);
+              return null; // Return null on error, will use mock data
+            }),
+            api.getCourses().catch(err => {
+              console.warn('Failed to fetch courses:', err);
+              return null; // Return null on error, will use mock data
+            }),
+          ]).then(results => [
+            results[0].status === 'fulfilled' ? results[0].value : null,
+            results[1].status === 'fulfilled' ? results[1].value : null,
           ]);
 
           console.log('📥 Data received:', { userProfileRaw, coursesDataRaw });
@@ -332,7 +341,8 @@ function App() {
           console.log('✅ Initialization complete');
         } catch (err) {
           console.error('❌ Failed to fetch data:', err);
-          // Always update state - don't check isMountedRef to avoid getting stuck
+          
+          // Handle errors - show error and require login
           setError(err.message);
           setIsAuthenticated(false);
           
@@ -344,6 +354,7 @@ function App() {
           
           // Clear invalid tokens
           api.logout();
+        }
         } finally {
           // Clear the safety timeout since we completed (successfully or with error)
           clearTimeout(safetyTimeout);
