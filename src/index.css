@@ -1,3 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Fade-in animation for smooth feedback indicators */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Reduce motion utility - kills all animations and transitions for accessibility */
+  .reduce-motion,
+  .reduce-motion * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Dyslexic Font Support - Phase 3 Smart Tags */
+.font-dyslexic,
+.font-dyslexic * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+}
+
+/* Font Size Utilities - Phase 3 Smart Tags */
+.font-small {
+  font-size: 87.5%; /* 14px base */
+}
+
+.font-medium {
+  font-size: 100%; /* 16px base - default */
+}
+
+.font-large {
+  font-size: 112.5%; /* 18px base */
+}
+
+/* Bionic Reading - stronger emphasis */
+.bionic-text strong {
+  font-weight: 700;
+  color: inherit;
+}
