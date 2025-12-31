@@ -32,14 +32,24 @@ axiosInstance.interceptors.request.use(
 // Response interceptor: handle 401 and attempt token refresh
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Handle 204 No Content - return empty object
+    // Handle 204 No Content - set data to empty object
     if (response.status === 204) {
-      return { data: {} };
+      response.data = {};
     }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+
+    // Handle network errors (no response)
+    if (!error.response) {
+      const networkError = {
+        message: error.message || 'Network error. Please check your connection.',
+        status: 0,
+        data: null,
+      };
+      return Promise.reject(networkError);
+    }
 
     // Handle timeout errors
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
@@ -61,7 +71,7 @@ axiosInstance.interceptors.response.use(
         try {
           console.log('🔄 Attempting token refresh...');
           // Attempt to refresh the access token with a timeout
-          const response = await axios.post(`${BASE_URL}/auth/token/refresh/`, {
+          const response = await axiosInstance.post('/auth/token/refresh/', {
             refresh: refreshToken,
           }, { timeout: 5000 });
 
@@ -170,6 +180,7 @@ export const api = {
         id: lessonId,
         title: 'Introduction to Python',
         videoUrl: 'https://www.youtube.com/watch?v=rfscVS0vtbw',
+        videoId: 'rfscVS0vtbw',
         transcript: [
           { time: 0, text: 'Welcome to this lesson on Python programming fundamentals.' },
           { time: 5, text: 'Today we will explore variables, functions, and control flow in Python.' },
@@ -210,6 +221,7 @@ Try creating a simple Python program that uses variables and functions to calcul
         id: lessonId,
         title: 'Web Development Basics',
         videoUrl: 'https://www.youtube.com/watch?v=kUMe1FH4CHE',
+        videoId: 'kUMe1FH4CHE',
         transcript: [
           { time: 0, text: 'Welcome to web development basics.' },
           { time: 5, text: 'Today we\'ll learn about HTML, CSS, and JavaScript.' },
@@ -250,6 +262,7 @@ JavaScript makes your webpage interactive and dynamic.
         id: lessonId,
         title: 'Data Structures & Algorithms',
         videoUrl: 'https://www.youtube.com/watch?v=RBSGKlAvoiM',
+        videoId: 'RBSGKlAvoiM',
         transcript: [
           { time: 0, text: 'Welcome to data structures and algorithms.' },
           { time: 5, text: 'Today we\'ll explore fundamental data structures like arrays and linked lists.' },
@@ -342,15 +355,16 @@ Big O notation describes the time and space complexity of algorithms.
   // Get or create the user's default timer
   getOrCreateTimer: async () => {
     try {
-      const timers = await axiosInstance.get('/ef/timer/');
-      const timersList = Array.isArray(timers.data) ? timers.data : (timers.data.results || []);
+      const response = await axiosInstance.get('/ef/timer/');
+      // Response interceptor already handles response.data, so we use response.data directly
+      const timersList = Array.isArray(response.data) ? response.data : (response.data?.results || []);
       
       if (timersList.length > 0) {
         return timersList[0]; // Return first timer
       }
       
       // Create default timer if none exists
-      const newTimer = await axiosInstance.post('/ef/timer/', {
+      const newTimerResponse = await axiosInstance.post('/ef/timer/', {
         work_duration: 25,
         break_duration: 5,
         long_break_duration: 15,
@@ -358,7 +372,8 @@ Big O notation describes the time and space complexity of algorithms.
         current_status: 'idle',
         session_start_time: null,
       });
-      return newTimer.data;
+      // Response interceptor already handles response.data
+      return newTimerResponse.data;
     } catch (error) {
       console.error('Failed to get or create timer:', error);
       throw error;
@@ -412,7 +427,7 @@ Big O notation describes the time and space complexity of algorithms.
       throw new Error('No refresh token available');
     }
 
-    const response = await axios.post(`${BASE_URL}/auth/token/refresh/`, {
+    const response = await axiosInstance.post('/auth/token/refresh/', {
       refresh: refreshToken,
     });
 

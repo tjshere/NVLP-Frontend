@@ -268,13 +268,15 @@ function App() {
   // Check authentication and fetch data on mount
   useEffect(() => {
     let safetyTimeout;
+    let isMounted = true; // Local mounted flag for this effect
+    
     const initializeApp = async () => {
       console.log('🔄 Initializing app...');
       
       // Safety timeout to prevent infinite loading (8 seconds)
       safetyTimeout = setTimeout(() => {
+        if (!isMounted) return;
         console.error('⏱️ Initialization timeout - forcing exit from loading screen');
-        // Force state updates without checking isMountedRef - we NEED to exit the loading screen
         setIsInitializing(false);
         setIsLoadingUser(false);
         setIsLoadingCourses(false);
@@ -289,6 +291,7 @@ function App() {
       if (api.isAuthenticated()) {
         console.log('✅ Token found, fetching user data...');
         try {
+          if (!isMounted) return;
           setIsLoadingUser(true);
           setIsLoadingCourses(true);
           
@@ -307,6 +310,7 @@ function App() {
             results[1].status === 'fulfilled' ? results[1].value : null,
           ]);
 
+          if (!isMounted) return;
           console.log('📥 Data received:', { userProfileRaw, coursesDataRaw });
 
           // Use mock data fallback if backend returns URLs instead of real data
@@ -334,12 +338,13 @@ function App() {
             coursesIsArray: Array.isArray(coursesData)
           });
 
-          // Always update state - don't check isMountedRef to avoid getting stuck
+          if (!isMounted) return;
           setUser(userProfile);
           setCourses(coursesData);
           setIsAuthenticated(true);
           console.log('✅ Initialization complete');
         } catch (err) {
+          if (!isMounted) return;
           console.error('❌ Failed to fetch data:', err);
           
           // Handle errors - show error and require login
@@ -354,31 +359,31 @@ function App() {
           
           // Clear invalid tokens
           api.logout();
-        }
         } finally {
+          if (!isMounted) return;
           // Clear the safety timeout since we completed (successfully or with error)
           clearTimeout(safetyTimeout);
           
-          // Always exit loading screen - don't check isMountedRef to avoid getting stuck
           setIsLoadingUser(false);
           setIsLoadingCourses(false);
           setIsInitializing(false);
           console.log('🏁 Initialization finished (loading states reset)');
         }
       } else {
+        if (!isMounted) return;
         // Clear the safety timeout since we're showing login immediately
         clearTimeout(safetyTimeout);
         
         console.log('ℹ️ No token found, showing login screen');
-        // Always exit loading screen - don't check isMountedRef to avoid getting stuck
         setIsInitializing(false);
       }
     };
 
     initializeApp();
     
-    // Cleanup function to clear timeout if component unmounts
+    // Cleanup function to clear timeout and set mounted flag
     return () => {
+      isMounted = false;
       if (safetyTimeout) {
         clearTimeout(safetyTimeout);
       }
@@ -464,7 +469,7 @@ const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout }
           } 
         />
         
-        {/* Lesson Player Route */}
+        {/* Lesson Player Route - only accessible when authenticated */}
         <Route 
           path="/lesson/:courseId" 
           element={<LessonPlayer onLogout={onLogout} />} 

@@ -20,6 +20,7 @@ import { useSensory } from '../context/SensoryContext';
 import SmartText from './SmartText';
 import api from '../api';
 import toast from 'react-hot-toast';
+import { AlertTriangle } from 'lucide-react';
 
 const LessonPlayer = ({ onLogout }) => {
   const { courseId } = useParams();
@@ -29,8 +30,11 @@ const LessonPlayer = ({ onLogout }) => {
     lowAudio, 
     reduceAnimations,
     dyslexicFont,
-    fontSize
+    fontSize,
+    triggerEmergencyReset
   } = useSensory();
+
+  console.log('🎬 LessonPlayer component mounted', { courseId });
 
   // Lesson data state
   const [lesson, setLesson] = useState(null);
@@ -51,6 +55,8 @@ const LessonPlayer = ({ onLogout }) => {
   const [focusMode, setFocusMode] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
   const [activeTab, setActiveTab] = useState('transcript'); // 'transcript' or 'notes'
+  const [showEmergencyReset, setShowEmergencyReset] = useState(false);
+  const [showBreathingExercise, setShowBreathingExercise] = useState(false);
 
   // Progress tracking
   const [watchedPercentage, setWatchedPercentage] = useState(0);
@@ -68,6 +74,43 @@ const LessonPlayer = ({ onLogout }) => {
   const handleClose = useCallback(() => {
     navigate('/');
   }, [navigate]);
+
+  // Handle emergency reset
+  const handleEmergencyReset = useCallback(async () => {
+    console.log('🚨 Emergency reset button clicked');
+    setShowEmergencyReset(true);
+  }, []);
+
+  // Confirm emergency reset
+  const confirmEmergencyReset = useCallback(async () => {
+    console.log('✅ Emergency reset confirmed');
+    setShowEmergencyReset(false);
+    
+    // Pause video if playing
+    if (youtubePlayerRef.current && youtubePlayerRef.current.pauseVideo) {
+      try {
+        youtubePlayerRef.current.pauseVideo();
+        setPlaying(false);
+      } catch (err) {
+        console.warn('Could not pause video:', err);
+      }
+    }
+    
+    // Trigger the emergency reset from context
+    if (triggerEmergencyReset) {
+      await triggerEmergencyReset();
+    }
+    
+    // Show breathing exercise overlay
+    setShowBreathingExercise(true);
+    console.log('🧘 Breathing exercise overlay shown');
+  }, [triggerEmergencyReset]);
+
+  // Close breathing exercise
+  const closeBreathingExercise = useCallback(() => {
+    console.log('🧘 Closing breathing exercise');
+    setShowBreathingExercise(false);
+  }, []);
 
   // Load YouTube IFrame API script
   useEffect(() => {
@@ -227,11 +270,12 @@ const LessonPlayer = ({ onLogout }) => {
         // Fallback: reload iframe with timestamp (will show thumbnail briefly)
         const iframe = playerRef.current;
         if (iframe && iframe.src) {
-          const videoId = lesson?.videoUrl.includes('youtube.com/watch?v=')
-            ? lesson.videoUrl.split('v=')[1]?.split('&')[0]
-            : lesson?.videoUrl.includes('youtu.be/')
-            ? lesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
-            : null;
+          const videoId = lesson?.videoId || 
+            (lesson?.videoUrl.includes('youtube.com/watch?v=')
+              ? lesson.videoUrl.split('v=')[1]?.split('&')[0]
+              : lesson?.videoUrl.includes('youtu.be/')
+              ? lesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
+              : null);
           
           if (videoId) {
             const newUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&start=${Math.floor(time)}&autoplay=1&origin=${window.location.origin}&controls=1&modestbranding=1&rel=0`;
@@ -299,7 +343,69 @@ const LessonPlayer = ({ onLogout }) => {
   const currentTranscriptIndex = getCurrentTranscriptIndex();
 
   return (
-    <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} ${fontClasses}`}>
+    <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} ${fontClasses} flex flex-col`}>
+      {/* Safety Header Bar - Always visible at top */}
+      <div className="bg-red-600 p-2 flex justify-center z-50 relative">
+        <button
+          onClick={handleEmergencyReset}
+          className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors shadow-lg"
+        >
+          <AlertTriangle size={18} />
+          <span>SENSORY SAFETY RESET</span>
+        </button>
+      </div>
+
+      {/* Emergency Reset Confirmation Modal */}
+      {showEmergencyReset && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-75">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl max-w-md">
+            <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
+              Activate Sensory Safety Mode?
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              This will enable dark mode, reduce audio, and minimize animations to create a calmer environment.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmEmergencyReset}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Activate Safety Mode
+              </button>
+              <button
+                onClick={() => setShowEmergencyReset(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Breathing Exercise Overlay */}
+      {showBreathingExercise && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl max-w-lg text-center">
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+              Breathing Exercise
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              Take a moment to breathe. Inhale slowly for 4 counts, hold for 4, and exhale for 4.
+            </p>
+            <div className="mb-6">
+              <div className="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 animate-pulse"></div>
+            </div>
+            <button
+              onClick={closeBreathingExercise}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              I'm Ready to Continue
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header (hidden in focus mode) */}
       {!focusMode && (
         <div className={`flex items-center justify-between p-4 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b transition-colors duration-300`}>
@@ -365,21 +471,22 @@ const LessonPlayer = ({ onLogout }) => {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className={`flex ${focusMode ? 'h-full' : 'h-[calc(100vh-73px)]'}`}>
-        {/* Video Player Section */}
-        <div className={`${showTranscript && !focusMode ? 'w-2/3' : 'w-full'} flex flex-col bg-black`}>
-          {/* React Player */}
-          <div className="flex-1 relative bg-black" style={{ minHeight: '400px', height: '100%' }}>
+      {/* Main Content - flex-grow to fill remaining space */}
+      <div className={`flex flex-grow ${focusMode ? '' : ''} overflow-hidden`}>
+        {/* Video Player Section - flex-grow container */}
+        <div className={`${showTranscript && !focusMode ? 'w-2/3' : 'w-full'} flex flex-col bg-black flex-grow`}>
+          {/* React Player - flex-grow to fill container */}
+          <div className="flex-grow relative bg-black" style={{ minHeight: '400px' }}>
             {lesson?.videoUrl ? (
               <div className="absolute inset-0 w-full h-full" style={{ minHeight: '400px' }}>
-                {/* Convert YouTube watch URL to embed URL */}
+                {/* Use videoId from lesson data, fallback to parsing videoUrl */}
                 {(() => {
-                  const videoId = lesson.videoUrl.includes('youtube.com/watch?v=')
-                    ? lesson.videoUrl.split('v=')[1]?.split('&')[0]
-                    : lesson.videoUrl.includes('youtu.be/')
-                    ? lesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
-                    : null;
+                  const videoId = lesson.videoId || 
+                    (lesson.videoUrl.includes('youtube.com/watch?v=')
+                      ? lesson.videoUrl.split('v=')[1]?.split('&')[0]
+                      : lesson.videoUrl.includes('youtu.be/')
+                      ? lesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]
+                      : null);
                   
                   const embedUrl = videoId 
                     ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}&controls=1&modestbranding=1&rel=0`

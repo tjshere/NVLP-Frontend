@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
 
@@ -437,6 +437,74 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
     }
   };
 
+  // Emergency Sensory Reset - sets all safety preferences to true simultaneously
+  const triggerEmergencyReset = useCallback(async () => {
+    if (!user) {
+      console.warn('Cannot trigger emergency reset: user is null');
+      return;
+    }
+
+    console.log('🚨 Emergency sensory reset triggered');
+    setSavingStatus('saving');
+
+    // Update refs synchronously
+    preferencesRef.current.dark_mode = true;
+    preferencesRef.current.low_audio = true;
+    preferencesRef.current.reduce_animations = true;
+
+    // Update React state immediately
+    setDarkMode(true);
+    setLowAudio(true);
+    setReduceAnimations(true);
+
+    // Add reduce-motion class to document root
+    document.documentElement.classList.add('reduce-motion');
+
+    try {
+      // Send single API call with all preferences
+      await api.patchUserProfile({
+        preferences: {
+          ...preferencesRef.current,
+          dark_mode: true,
+          low_audio: true,
+          reduce_animations: true,
+        }
+      });
+
+      console.log('✅ Emergency reset saved successfully');
+      setSavingStatus('saved');
+      toast.success('Sensory safety mode activated', { 
+        duration: 3000, 
+        position: 'top-center' 
+      });
+      
+      setTimeout(() => { 
+        setSavingStatus('idle'); 
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to save emergency reset:', err);
+      setSavingStatus('error');
+      
+      // Rollback on error
+      preferencesRef.current.dark_mode = false;
+      preferencesRef.current.low_audio = false;
+      preferencesRef.current.reduce_animations = false;
+      setDarkMode(false);
+      setLowAudio(false);
+      setReduceAnimations(false);
+      document.documentElement.classList.remove('reduce-motion');
+      
+      toast.error(err.message || 'Failed to activate safety mode', { 
+        duration: 3000, 
+        position: 'top-center' 
+      });
+      
+      setTimeout(() => { 
+        setSavingStatus('idle'); 
+      }, 3000);
+    }
+  }, [user]);
+
   const value = {
     darkMode,
     lowAudio,
@@ -447,6 +515,7 @@ export const SensoryProvider = ({ children, user, onAuthFailure }) => {
     savingStatus,
     updatePreference,
     smartTag,
+    triggerEmergencyReset,
   };
 
   return (
