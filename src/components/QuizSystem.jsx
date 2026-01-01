@@ -58,13 +58,13 @@ const QuizSystem = ({ questions = [], onComplete, darkMode }) => {
       setShowFeedback(false);
       setIsCorrect(null);
     } else {
-      // Calculate final score including the current question
-      const calculatedFinalScore = score + (isCorrect ? 1 : 0);
-      setFinalScore(calculatedFinalScore);
+      // Score is already updated by checkAnswer(), so use it directly
+      // (checkAnswer increments score if correct, so no need to add isCorrect again)
+      setFinalScore(score);
       setCompleted(true);
       // Pass final score back to parent component
       if (onComplete) {
-        onComplete(calculatedFinalScore);
+        onComplete(score);
       }
     }
   };

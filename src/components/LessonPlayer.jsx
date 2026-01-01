@@ -727,29 +727,9 @@ const LessonPlayer = ({ onLogout }) => {
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   <QuizSystem 
                     questions={lesson?.questions || []} 
-                    onComplete={async (score) => {
+                    onComplete={(score) => {
                       const totalQuestions = lesson?.questions?.length || 0;
-                      const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-                      
                       console.log('✅ Quiz completed with score:', score, '/', totalQuestions);
-                      
-                      // Save quiz results to backend
-                      try {
-                        if (courseId) {
-                          await api.updateProgress(courseId, {
-                            quiz_score: score,
-                            quiz_total: totalQuestions,
-                            quiz_percentage: percentage,
-                            quiz_completed: true,
-                            last_activity: new Date().toISOString(),
-                          });
-                          console.log('✅ Quiz results saved to backend');
-                        }
-                      } catch (err) {
-                        console.warn('⚠️ Failed to save quiz results:', err);
-                        // Don't show error to user, just log it
-                      }
-                      
                       toast.success(`Knowledge check completed! Score: ${score}/${totalQuestions}`, {
                         duration: 3000,
                         position: 'top-center'
