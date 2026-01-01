@@ -14,6 +14,7 @@ const QuizSystem = ({ questions = [], onComplete, darkMode }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
 
   // Fallback for empty questions array
   if (!questions || questions.length === 0) {
@@ -57,13 +58,22 @@ const QuizSystem = ({ questions = [], onComplete, darkMode }) => {
       setShowFeedback(false);
       setIsCorrect(null);
     } else {
+      // Calculate final score including the current question
+      const calculatedFinalScore = score + (isCorrect ? 1 : 0);
+      setFinalScore(calculatedFinalScore);
       setCompleted(true);
       // Pass final score back to parent component
-      if (onComplete) onComplete(score + (isCorrect ? 1 : 0));
+      if (onComplete) {
+        onComplete(calculatedFinalScore);
+      }
     }
   };
 
   if (completed) {
+    const totalQuestions = questions.length;
+    const percentage = Math.round((finalScore / totalQuestions) * 100);
+    const xpEarned = finalScore * 10; // 10 XP per correct answer
+    
     return (
       <div className={`text-center p-8 ${darkMode ? '' : ''}`}>
         <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${
@@ -74,6 +84,30 @@ const QuizSystem = ({ questions = [], onComplete, darkMode }) => {
         <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           Checkpoint Complete!
         </h3>
+        
+        {/* Score Display */}
+        <div className={`mb-4 p-4 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+          <div className="text-4xl font-bold mb-2 text-blue-600 dark:text-blue-400">
+            {finalScore}/{totalQuestions}
+          </div>
+          <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {percentage}% Correct
+          </div>
+        </div>
+
+        {/* XP Reward */}
+        <div className={`mb-6 p-4 rounded-xl border-2 ${darkMode ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-2xl">⭐</span>
+            <span className={`text-xl font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
+              +{xpEarned} XP
+            </span>
+          </div>
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Great job! Keep learning to earn more XP.
+          </p>
+        </div>
+
         <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           You've successfully validated your learning for this section.
         </p>
