@@ -216,6 +216,44 @@ Python functions are defined with the \`def\` keyword.
 Try creating a simple Python program that uses variables and functions to calculate the area of a rectangle.
         `.trim(),
         duration: 60,
+        questions: [
+          {
+            question: 'How do you create a variable in Python?',
+            options: [
+              'You must declare the type first (e.g., int x = 5)',
+              'Simply assign a value (e.g., x = 5)',
+              'Use the var keyword (e.g., var x = 5)',
+              'Variables are created automatically'
+            ],
+            correctAnswer: 1,
+            successMessage: 'Correct! Python uses dynamic typing - just assign a value!',
+            hint: 'In Python, you don\'t need to declare variable types. Just use the assignment operator =.'
+          },
+          {
+            question: 'What keyword is used to define a function in Python?',
+            options: [
+              'function',
+              'def',
+              'func',
+              'define'
+            ],
+            correctAnswer: 1,
+            successMessage: 'Great! The def keyword is used to define functions in Python.',
+            hint: 'Think about the keyword that comes before the function name in Python.'
+          },
+          {
+            question: 'How does Python indicate code blocks?',
+            options: [
+              'Using curly braces { }',
+              'Using square brackets [ ]',
+              'Using indentation',
+              'Using parentheses ( )'
+            ],
+            correctAnswer: 2,
+            successMessage: 'Exactly! Python uses indentation to define code blocks, which makes code more readable.',
+            hint: 'Python is known for its use of whitespace to structure code.'
+          }
+        ],
       },
       '2': {
         id: lessonId,
@@ -257,6 +295,32 @@ CSS (Cascading Style Sheets) controls the appearance of your webpage.
 JavaScript makes your webpage interactive and dynamic.
         `.trim(),
         duration: 60,
+        questions: [
+          {
+            question: 'What does HTML stand for?',
+            options: [
+              'HyperText Markup Language',
+              'High Tech Modern Language',
+              'Home Tool Markup Language',
+              'Hyperlink Text Markup Language'
+            ],
+            correctAnswer: 0,
+            successMessage: 'Correct! HTML stands for HyperText Markup Language.',
+            hint: 'HTML is the standard markup language for creating web pages.'
+          },
+          {
+            question: 'What is the primary purpose of CSS?',
+            options: [
+              'To add interactivity to web pages',
+              'To structure web page content',
+              'To style and layout web pages',
+              'To store data on the server'
+            ],
+            correctAnswer: 2,
+            successMessage: 'Right! CSS is used to style and control the layout of web pages.',
+            hint: 'CSS controls how HTML elements are displayed on screen.'
+          }
+        ],
       },
       '3': {
         id: lessonId,
@@ -298,6 +362,32 @@ Algorithms are step-by-step procedures for solving problems.
 Big O notation describes the time and space complexity of algorithms.
         `.trim(),
         duration: 60,
+        questions: [
+          {
+            question: 'What is a data structure?',
+            options: [
+              'A programming language',
+              'A way of organizing and storing data',
+              'A type of algorithm',
+              'A computer hardware component'
+            ],
+            correctAnswer: 1,
+            successMessage: 'Correct! Data structures are ways of organizing and storing data in computer memory.',
+            hint: 'Data structures help organize information efficiently.'
+          },
+          {
+            question: 'What does Big O notation describe?',
+            options: [
+              'The size of data structures',
+              'The time and space complexity of algorithms',
+              'The number of variables in a program',
+              'The speed of a computer processor'
+            ],
+            correctAnswer: 1,
+            successMessage: 'Exactly! Big O notation describes how algorithm performance scales with input size.',
+            hint: 'Big O notation helps analyze algorithm efficiency.'
+          }
+        ],
       },
     };
     

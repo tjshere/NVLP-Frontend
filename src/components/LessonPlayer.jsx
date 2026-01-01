@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useSensory } from '../context/SensoryContext';
 import SmartText from './SmartText';
+import QuizSystem from './QuizSystem';
 import api from '../api';
 import toast from 'react-hot-toast';
 import { AlertTriangle } from 'lucide-react';
@@ -54,7 +55,7 @@ const LessonPlayer = ({ onLogout }) => {
   // UI state
   const [focusMode, setFocusMode] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
-  const [activeTab, setActiveTab] = useState('transcript'); // 'transcript' or 'notes'
+  const [activeTab, setActiveTab] = useState('transcript'); // 'transcript', 'notes', or 'checkin'
   const [showEmergencyReset, setShowEmergencyReset] = useState(false);
   const [showBreathingExercise, setShowBreathingExercise] = useState(false);
 
@@ -673,6 +674,20 @@ const LessonPlayer = ({ onLogout }) => {
               >
                 Lesson Notes
               </button>
+              <button
+                onClick={() => setActiveTab('checkin')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'checkin'
+                    ? darkMode
+                      ? 'border-b-2 border-blue-500 text-blue-400'
+                      : 'border-b-2 border-blue-600 text-blue-600'
+                    : darkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Check-in
+              </button>
             </div>
 
             {/* Tab Content */}
@@ -704,9 +719,23 @@ const LessonPlayer = ({ onLogout }) => {
                     </button>
                   ))}
                 </div>
-              ) : (
+              ) : activeTab === 'notes' ? (
                 <div className={`prose ${darkMode ? 'prose-invert' : ''} max-w-none`}>
                   <SmartText>{lesson.content}</SmartText>
+                </div>
+              ) : (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                  <QuizSystem 
+                    questions={lesson?.questions || []} 
+                    onComplete={(score) => {
+                      console.log('✅ Quiz completed with score:', score);
+                      toast.success(`Knowledge check completed! Score: ${score}/${lesson?.questions?.length || 0}`, {
+                        duration: 3000,
+                        position: 'top-center'
+                      });
+                    }}
+                    darkMode={darkMode}
+                  />
                 </div>
               )}
             </div>
