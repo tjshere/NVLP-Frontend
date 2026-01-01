@@ -344,16 +344,6 @@ const LessonPlayer = ({ onLogout }) => {
 
   return (
     <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} ${fontClasses} flex flex-col`}>
-      {/* Safety Header Bar - Always visible at top */}
-      <div className="bg-red-600 p-2 flex justify-center z-50 relative">
-        <button
-          onClick={handleEmergencyReset}
-          className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors shadow-lg"
-        >
-          <AlertTriangle size={18} />
-          <span>SENSORY SAFETY RESET</span>
-        </button>
-      </div>
 
       {/* Emergency Reset Confirmation Modal */}
       {showEmergencyReset && (
@@ -458,6 +448,20 @@ const LessonPlayer = ({ onLogout }) => {
             >
               {focusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               <span className="text-sm">Focus Mode</span>
+            </button>
+
+            {/* Safety Button */}
+            <button
+              onClick={handleEmergencyReset}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                darkMode 
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Sensory Safety Reset"
+            >
+              <AlertTriangle size={16} className="text-orange-500" />
+              <span className="text-sm">Safety</span>
             </button>
 
             {/* Close Button */}
