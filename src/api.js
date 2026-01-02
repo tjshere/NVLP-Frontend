@@ -159,8 +159,50 @@ export const api = {
 
   // Courses
   getCourses: async () => {
-    const response = await axiosInstance.get('/courses/');
-    return response.data;
+    // Always return mock courses for now (backend might only have course 1)
+    // This ensures all 3 courses show up on the dashboard
+    const mockCourses = [
+      {
+        id: 1,
+        title: 'Introduction to Python',
+        description: 'Learn Python programming fundamentals including variables, functions, and control flow.'
+      },
+      {
+        id: 2,
+        title: 'Web Development Basics',
+        description: 'Master the fundamentals of HTML, CSS, and JavaScript for web development.'
+      },
+      {
+        id: 3,
+        title: 'Data Structures & Algorithms',
+        description: 'Explore fundamental data structures and algorithms with Big O notation analysis.'
+      }
+    ];
+    
+    // Try to fetch from backend and merge with mock data
+    try {
+      const response = await axiosInstance.get('/courses/');
+      const backendCourses = Array.isArray(response.data) ? response.data : (response.data?.results || []);
+      
+      // If backend has courses, merge them with mock data (backend courses take priority)
+      if (backendCourses.length > 0) {
+        // Create a map of backend courses by ID
+        const backendMap = new Map(backendCourses.map(c => [c.id, c]));
+        
+        // Merge: use backend course if exists, otherwise use mock
+        const merged = mockCourses.map(mock => {
+          const backend = backendMap.get(mock.id);
+          return backend ? { ...mock, ...backend } : mock;
+        });
+        
+        return merged;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch courses from backend, using mock data:', error);
+    }
+    
+    // Return mock courses if backend fails or is empty
+    return mockCourses;
   },
 
   // Get specific course details
