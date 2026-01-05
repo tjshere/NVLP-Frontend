@@ -98,7 +98,7 @@ const TaskBreaker = ({ onTasksChange }) => {
   const handleToggleStep = async (taskId, stepId, currentStatus) => {
     // Optimistic update
     const updatedTasks = tasks.map(task => {
-      if (task.id === taskId) {
+      if (task.id === taskId && task.steps && Array.isArray(task.steps)) {
         const updatedSteps = task.steps.map(step =>
           step.id === stepId ? { ...step, is_step_complete: !currentStatus } : step
         );
@@ -115,7 +115,7 @@ const TaskBreaker = ({ onTasksChange }) => {
       
       // Check if all steps are complete and update task completion
       const task = updatedTasks.find(t => t.id === taskId);
-      const allStepsComplete = task.steps.every(s => s.is_step_complete);
+      const allStepsComplete = task?.steps && Array.isArray(task.steps) && task.steps.every(s => s.is_step_complete);
       
       if (allStepsComplete && !task.is_complete) {
         await api.patchTask(taskId, { is_complete: true });
@@ -179,7 +179,7 @@ const TaskBreaker = ({ onTasksChange }) => {
   
   // Calculate progress for a task
   const calculateProgress = (task) => {
-    if (task.steps.length === 0) return 0;
+    if (!task.steps || !Array.isArray(task.steps) || task.steps.length === 0) return 0;
     const completedSteps = task.steps.filter(s => s.is_step_complete).length;
     return Math.round((completedSteps / task.steps.length) * 100);
   };
@@ -363,7 +363,7 @@ const TaskBreaker = ({ onTasksChange }) => {
                 
                 {/* Steps */}
                 <div className="space-y-2">
-                  {task.steps.map((step) => (
+                  {task.steps && Array.isArray(task.steps) && task.steps.map((step) => (
                     <label 
                       key={step.id}
                       className="flex items-start gap-3 cursor-pointer group"

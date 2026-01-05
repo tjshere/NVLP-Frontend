@@ -58,11 +58,11 @@ const QuizSystem = ({ questions = [], onComplete, darkMode }) => {
       setShowFeedback(false);
       setIsCorrect(null);
     } else {
-      // Score is already updated by checkAnswer(), so use it directly
-      // (checkAnswer increments score if correct, so no need to add isCorrect again)
+      // checkAnswer() has already updated score before this function is called
+      // (separate button clicks ensure state is updated), so score is current
       setFinalScore(score);
       setCompleted(true);
-      // Pass final score back to parent component
+      // Pass final score to parent component
       if (onComplete) {
         onComplete(score);
       }

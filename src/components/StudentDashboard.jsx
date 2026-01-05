@@ -314,25 +314,22 @@ const StudentDashboard = ({
   const { darkMode } = useSensory();
   const studentName = user?.username || "Student";
   const [tasks, setTasks] = useState([]);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-
-  // Load tasks for FocusEngine and TaskBreaker coordination
-  useEffect(() => {
-    loadTasks();
-  }, []);
 
   const loadTasks = async () => {
     try {
-      setIsLoadingTasks(true);
       const tasksData = await api.getTasks();
       const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData.results || []);
       setTasks(tasksList);
     } catch (error) {
       console.error('Failed to load tasks:', error);
-    } finally {
-      setIsLoadingTasks(false);
     }
   };
+
+  // Load tasks for FocusEngine and TaskBreaker coordination
+  // Note: Data fetching on mount is a standard React pattern
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   // Callback to refresh tasks when TaskBreaker updates them
   const handleTasksChange = () => {

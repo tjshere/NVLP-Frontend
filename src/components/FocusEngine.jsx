@@ -567,7 +567,7 @@ const FocusEngine = ({ tasks = [] }) => {
                   <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">
                     <SmartText>{task.main_task_title}</SmartText>
                   </div>
-                  {task.steps.filter(step => !step.is_step_complete).map(step => (
+                  {task.steps && Array.isArray(task.steps) && task.steps.filter(step => !step.is_step_complete).map(step => (
                     <button
                       key={step.id}
                       onClick={() => handlePinTask(task, step)}

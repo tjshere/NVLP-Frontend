@@ -37,7 +37,9 @@ const ProgressInsights = ({ tasks = [], user }) => {
       // Calculate Tasks Smashed (completed steps)
       let completedSteps = 0;
       tasks.forEach(task => {
-        completedSteps += task.steps.filter(step => step.is_step_complete).length;
+        if (task.steps && Array.isArray(task.steps)) {
+          completedSteps += task.steps.filter(step => step.is_step_complete).length;
+        }
       });
       setTasksSmashed(completedSteps);
       
