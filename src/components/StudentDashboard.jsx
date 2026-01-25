@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Moon, Volume2, Film, Loader2, Check, AlertCircle, Lightbulb, PlayCircle, CheckCircle, User, Type, BookOpen, TextIcon } from 'lucide-react';
+import { Sparkles, Moon, Volume2, Film, Loader2, Check, AlertCircle, Lightbulb, PlayCircle, CheckCircle, User, Type, BookOpen, TextIcon, Wind } from 'lucide-react';
 import { useSensory } from '../context/SensoryContext';
 import { ProfileSummarySkeleton, CourseListSkeleton } from './Skeleton';
 import SmartText from './SmartText';
@@ -312,6 +312,7 @@ const StudentDashboard = ({
   isLoadingCourses = false,
 }) => {
   const { darkMode } = useSensory();
+  const navigate = useNavigate();
   const studentName = user?.username || "Student";
   const [tasks, setTasks] = useState([]);
 
@@ -348,6 +349,13 @@ const StudentDashboard = ({
           <div className="text-lg text-gray-500 dark:text-gray-400 transition-colors duration-300">
             <SmartText>Welcome, {studentName}</SmartText>
           </div>
+          <button
+            onClick={() => navigate('/calm-room')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <Wind size={16} />
+            <SmartText>Sensory Room</SmartText>
+          </button>
           {onLogout && (
             <button
               onClick={onLogout}

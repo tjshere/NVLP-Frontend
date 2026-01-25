@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import toast, { Toaster } from 'react-hot-toast';
 import StudentDashboard from './components/StudentDashboard';
 import LessonPlayer from './components/LessonPlayer';
+import CalmRoom from './components/CalmRoom';
 import { SensoryProvider, useSensory } from './context/SensoryContext';
 import api from './api';
 
@@ -473,6 +474,12 @@ const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout }
         <Route 
           path="/lesson/:courseId" 
           element={<LessonPlayer onLogout={onLogout} />} 
+        />
+        
+        {/* Calm Room / Sensory Room Route */}
+        <Route 
+          path="/calm-room" 
+          element={<CalmRoom />} 
         />
         
         {/* Redirect unknown routes to dashboard */}
