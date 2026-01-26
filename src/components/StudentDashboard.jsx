@@ -7,6 +7,8 @@ import SmartText from './SmartText';
 import TaskBreaker from './TaskBreaker';
 import FocusEngine from './FocusEngine';
 import ProgressInsights from './ProgressInsights';
+import CompanionSelector from './CompanionSelector';
+import CompanionWidget from './CompanionWidget';
 import api from '../api';
 
 // --- COMPONENT 1: SENSORY PANEL (Refactored - Stateless with Context) ---
@@ -315,6 +317,8 @@ const StudentDashboard = ({
   const navigate = useNavigate();
   const studentName = user?.username || "Student";
   const [tasks, setTasks] = useState([]);
+  const [selectedCompanion, setSelectedCompanion] = useState(null);
+  const [showCompanionSelector, setShowCompanionSelector] = useState(true);
 
   const loadTasks = async () => {
     try {
@@ -337,10 +341,29 @@ const StudentDashboard = ({
     loadTasks();
   };
 
+  // Handle companion selection
+  const handleCompanionSelect = (companion) => {
+    setSelectedCompanion(companion.id);
+    setShowCompanionSelector(false);
+  };
+
+  // Handle chat button click
+  const handleChatClick = () => {
+    // TODO: Implement chat functionality
+    console.log('Chat with companion:', selectedCompanion);
+  };
+
   return (
     <div className={`min-h-screen flex flex-col p-6 transition-colors duration-300 ${
       darkMode ? 'bg-gray-900' : 'bg-gray-100'
     }`}>
+      {/* Companion Selector Modal */}
+      <CompanionSelector
+        isOpen={showCompanionSelector}
+        onSelect={handleCompanionSelect}
+        onClose={() => setShowCompanionSelector(false)}
+      />
+
       <header className="flex justify-between items-center bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 mb-6 transition-colors duration-300">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors duration-300">
           <SmartText>NVLP Student Dashboard</SmartText>
@@ -373,6 +396,7 @@ const StudentDashboard = ({
            {isLoadingUser ? <ProfileSummarySkeleton /> : <ProfileSummary user={user} />}
            <SensoryPanel />
            <SmartTags tags={["Content Chunking", "Text-to-Speech", "Focus Mode"]} />
+           {selectedCompanion && <CompanionWidget companion={selectedCompanion} onChatClick={handleChatClick} />}
         </div>
 
         {/* MAIN CONTENT */}
