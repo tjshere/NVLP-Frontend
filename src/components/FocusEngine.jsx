@@ -149,24 +149,27 @@ const FocusEngine = ({ tasks = [] }) => {
         // Long break
         setMode('longBreak');
         setTimeLeft(longBreakDuration * 60);
-        toast.success('🎉 Work session complete! Take a long break!', {
+        toast.success('Work session done! Take a long break.', {
           duration: 5000,
+          position: 'bottom-right',
           icon: '☕',
         });
       } else {
-        // Short break
         setMode('break');
         setTimeLeft(breakDuration * 60);
-        toast.success('✅ Work session complete! Take a short break.', {
+        toast.success('Work session done! Short break time.', {
           duration: 4000,
+          position: 'bottom-right',
+          icon: '✅',
         });
       }
     } else {
-      // Break complete, back to work
       setMode('work');
       setTimeLeft(workDuration * 60);
-      toast.success('Break complete! Ready to focus?', {
+      toast.success('Break over. Ready to focus?', {
         duration: 3000,
+        position: 'bottom-right',
+        icon: '🎯',
       });
     }
     
@@ -175,20 +178,35 @@ const FocusEngine = ({ tasks = [] }) => {
   };
   
   const trackEngagementTime = async (minutes) => {
-    // Store engagement time in localStorage for insights
     try {
       const existingTime = parseInt(localStorage.getItem('total_focus_minutes') || '0');
       const newTotal = existingTime + minutes;
       localStorage.setItem('total_focus_minutes', newTotal.toString());
-      
-      // Also store today's date for streak calculation
+
+      // Store today's date for streak calculation
       const today = new Date().toDateString();
       const focusDates = JSON.parse(localStorage.getItem('focus_dates') || '[]');
       if (!focusDates.includes(today)) {
         focusDates.push(today);
         localStorage.setItem('focus_dates', JSON.stringify(focusDates));
+
+        // Calculate current streak
+        let streak = 0;
+        const check = new Date();
+        while (focusDates.includes(check.toDateString())) {
+          streak++;
+          check.setDate(check.getDate() - 1);
+        }
+
+        if (streak > 1) {
+          toast.success(`${streak} day streak! Keep it going.`, {
+            duration: 4000,
+            position: 'bottom-right',
+            icon: '🔥',
+          });
+        }
       }
-      
+
       console.log(`✅ Tracked ${minutes} focus minutes. Total: ${newTotal}`);
     } catch (error) {
       console.error('Failed to track engagement time:', error);
@@ -203,8 +221,10 @@ const FocusEngine = ({ tasks = [] }) => {
     const status = mode === 'work' ? 'working' : 'breaking';
     await syncTimerState(status);
     
-    toast.success(mode === 'work' ? '🎯 Focus mode activated!' : '☕ Break time!', {
+    toast.success(mode === 'work' ? 'Focus mode on. Let\'s go.' : 'Break time.', {
       duration: 2000,
+      position: 'bottom-right',
+      icon: mode === 'work' ? '🎯' : '☕',
     });
   };
   
@@ -266,6 +286,8 @@ const FocusEngine = ({ tasks = [] }) => {
     setPinnedStep(step);
     toast.success(`Pinned: ${step.step_description}`, {
       duration: 2000,
+      position: 'bottom-right',
+      icon: '📌',
     });
   };
   

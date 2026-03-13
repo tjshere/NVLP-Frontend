@@ -9,6 +9,7 @@ import FocusEngine from './FocusEngine';
 import ProgressInsights from './ProgressInsights';
 import CompanionSelector from './CompanionSelector';
 import CompanionWidget from './CompanionWidget';
+import ChatPanel from './ChatPanel';
 import api from '../api';
 
 // --- COMPONENT 1: SENSORY PANEL (Refactored - Stateless with Context) ---
@@ -188,7 +189,7 @@ const ProfileSummary = ({ user }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-5 transition-colors duration-300">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
           {getAvatarContent()}
         </div>
         <div>
@@ -247,78 +248,136 @@ const SmartTags = ({ tags = [] }) => {
 };
 
 // --- MAIN DASHBOARD ---
-const LearningPath = ({ courses, isLoading }) => {
+const LearningPath = ({ courses, isLoading, progressMap = {} }) => {
   const navigate = useNavigate();
-  
-  // Show skeleton while loading
+
   if (isLoading) {
     return <CourseListSkeleton count={3} />;
   }
-
-  const handleStartLesson = (courseId) => {
-    navigate(`/lesson/${courseId}`);
-  };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm transition-colors duration-300">
       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 transition-colors duration-300">
         <SmartText>Your Learning Path</SmartText>
       </h2>
-      
+
       {courses && courses.length > 0 ? (
-        <div className="space-y-3">
-          {courses.map((course) => (
-            <div 
-              key={course.id} 
-              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center transition-colors duration-300">
-                  <Lightbulb className="text-blue-600 dark:text-blue-400" size={20} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 transition-colors duration-300">
-                    <SmartText>{course.title}</SmartText>
-                  </h3>
-                  {course.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
-                      <SmartText>{course.description}</SmartText>
-                    </p>
-                  )}
+        <div className="space-y-4">
+          {courses.map((course) => {
+            const progress = progressMap[course.id] ?? course.progress ?? 0;
+            const isComplete = progress >= 100;
+            const hasStarted = progress > 0;
+
+            return (
+              <div
+                key={course.id}
+                className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  {/* Icon + text */}
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-300 ${
+                      isComplete
+                        ? 'bg-green-100 dark:bg-green-900/40'
+                        : 'bg-blue-100 dark:bg-blue-900/40'
+                    }`}>
+                      {isComplete
+                        ? <CheckCircle className="text-green-600 dark:text-green-400" size={20} />
+                        : <Lightbulb className="text-blue-600 dark:text-blue-400" size={20} />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-100 transition-colors duration-300">
+                          <SmartText>{course.title}</SmartText>
+                        </h3>
+                        {isComplete && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                      {course.description && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 transition-colors duration-300 line-clamp-1">
+                          <SmartText>{course.description}</SmartText>
+                        </p>
+                      )}
+
+                      {/* Progress bar */}
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {isComplete ? 'Complete' : hasStarted ? 'In Progress' : 'Not started'}
+                          </span>
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                            {progress}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isComplete
+                                ? 'bg-green-500'
+                                : 'bg-blue-600'
+                            }`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action button */}
+                  <button
+                    onClick={() => navigate(`/lesson/${course.id}`)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-300 flex-shrink-0 ${
+                      isComplete
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    <PlayCircle size={16} />
+                    <SmartText>{isComplete ? 'Review' : hasStarted ? 'Resume' : 'Start'}</SmartText>
+                  </button>
                 </div>
               </div>
-              <button 
-                onClick={() => handleStartLesson(course.id)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors duration-300"
-              >
-                <PlayCircle size={16} />
-                <SmartText>Start Lesson</SmartText>
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <p className="text-gray-400 dark:text-gray-500 text-center py-8 transition-colors duration-300">
-          <SmartText>No courses available yet.</SmartText>
-        </p>
+        <div className="text-center py-10">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BookOpen size={32} className="text-blue-400 dark:text-blue-500" />
+          </div>
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <SmartText>No courses yet</SmartText>
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+            <SmartText>Your enrolled courses will appear here once they're added by your educator.</SmartText>
+          </p>
+        </div>
       )}
     </div>
   );
 };
 
 const StudentDashboard = ({ 
-  user, 
-  courses, 
+  user,
+  courses,
   onLogout,
   isLoadingUser = false,
   isLoadingCourses = false,
+  initialCompanion = null,
+  onCompanionChange,
 }) => {
   const { darkMode } = useSensory();
   const navigate = useNavigate();
   const studentName = user?.username || "Student";
   const [tasks, setTasks] = useState([]);
-  const [selectedCompanion, setSelectedCompanion] = useState(null);
-  const [showCompanionSelector, setShowCompanionSelector] = useState(true);
+  const [selectedCompanion, setSelectedCompanion] = useState(initialCompanion?.id || null);
+  const [showCompanionSelector, setShowCompanionSelector] = useState(!initialCompanion);
+  const [showChat, setShowChat] = useState(false);
+  const [progressMap, setProgressMap] = useState({});
 
   const loadTasks = async () => {
     try {
@@ -330,10 +389,25 @@ const StudentDashboard = ({
     }
   };
 
+  const loadProgress = async () => {
+    try {
+      const data = await api.getProgress();
+      const list = Array.isArray(data) ? data : (data.results || []);
+      const map = {};
+      list.forEach((p) => {
+        const courseId = p.course_detail?.id ?? p.course;
+        if (courseId != null) map[courseId] = Math.round(p.completion_rate ?? 0);
+      });
+      setProgressMap(map);
+    } catch (error) {
+      console.error('Failed to load progress:', error);
+    }
+  };
+
   // Load tasks for FocusEngine and TaskBreaker coordination
-  // Note: Data fetching on mount is a standard React pattern
   useEffect(() => {
     loadTasks();
+    loadProgress();
   }, []);
 
   // Callback to refresh tasks when TaskBreaker updates them
@@ -345,12 +419,12 @@ const StudentDashboard = ({
   const handleCompanionSelect = (companion) => {
     setSelectedCompanion(companion.id);
     setShowCompanionSelector(false);
+    if (onCompanionChange) onCompanionChange(companion);
   };
 
   // Handle chat button click
   const handleChatClick = () => {
-    // TODO: Implement chat functionality
-    console.log('Chat with companion:', selectedCompanion);
+    setShowChat(true);
   };
 
   return (
@@ -364,6 +438,14 @@ const StudentDashboard = ({
         onClose={() => setShowCompanionSelector(false)}
       />
 
+      {/* Chat Panel */}
+      {showChat && selectedCompanion && (
+        <ChatPanel
+          companion={selectedCompanion}
+          onClose={() => setShowChat(false)}
+        />
+      )}
+
       <header className="flex justify-between items-center bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 mb-6 transition-colors duration-300">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors duration-300">
           <SmartText>NVLP Student Dashboard</SmartText>
@@ -374,7 +456,7 @@ const StudentDashboard = ({
           </div>
           <button
             onClick={() => navigate('/calm-room')}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
           >
             <Wind size={16} />
             <SmartText>Sensory Room</SmartText>
@@ -407,7 +489,7 @@ const StudentDashboard = ({
            {/* Focus Engine - Pomodoro Timer */}
            <FocusEngine tasks={tasks} />
            
-           <LearningPath courses={courses} isLoading={isLoadingCourses} />
+           <LearningPath courses={courses} isLoading={isLoadingCourses} progressMap={progressMap} />
            
            {/* Task Breaker - Executive Function Toolkit */}
            <TaskBreaker onTasksChange={handleTasksChange} />

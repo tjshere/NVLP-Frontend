@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Target, Flame, Zap, Award, BarChart3, Loader2 } from 'lucide-react';
+import { TrendingUp, Target, Flame, Zap, Award, BarChart3, Loader2, Rocket } from 'lucide-react';
 import api from '../api';
 import { useSensory } from '../context/SensoryContext';
 import SmartText from './SmartText';
@@ -178,6 +178,7 @@ const ProgressInsights = ({ tasks = [], user }) => {
   const colors = getChartColors();
   const maxWins = Math.max(...weeklyWins, 1);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const isFirstTime = tasksSmashed === 0 && focusMinutes === 0 && focusStreak === 0;
   
   if (isLoading) {
     return (
@@ -188,11 +189,49 @@ const ProgressInsights = ({ tasks = [], user }) => {
       </div>
     );
   }
+
+  if (isFirstTime) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm transition-colors duration-300">
+        <div className="flex items-center gap-2 mb-6">
+          <TrendingUp className="text-indigo-600 dark:text-indigo-400" size={22} />
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            <SmartText>Your Progress</SmartText>
+          </h2>
+        </div>
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Rocket size={32} className="text-indigo-400 dark:text-indigo-500" />
+          </div>
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <SmartText>Your journey starts here</SmartText>
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+            <SmartText>Complete a focus session or finish a task step — your stats will show up here.</SmartText>
+          </p>
+          <div className="mt-6 grid grid-cols-3 gap-3 max-w-sm mx-auto">
+            {[
+              { icon: Target, label: 'Complete a task step', color: 'text-purple-400' },
+              { icon: Zap, label: 'Run a focus session', color: 'text-emerald-400' },
+              { icon: Flame, label: 'Build a streak', color: 'text-orange-400' },
+            ].map(({ icon: Icon, label, color }) => (
+              <div key={label} className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 text-center">
+                <Icon size={20} className={`${color} mx-auto mb-1`} />
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                  <SmartText>{label}</SmartText>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
       {/* Header with Affirmation */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-800 dark:to-indigo-800 p-6 rounded-xl shadow-lg transition-colors duration-300">
+      <div className="bg-indigo-700 dark:bg-indigo-900 p-6 rounded-xl shadow-lg transition-colors duration-300">
         <div className="flex items-center gap-3 mb-2">
           <TrendingUp className="text-white" size={28} />
           <h2 className="text-2xl font-bold text-white">
@@ -273,41 +312,43 @@ const ProgressInsights = ({ tasks = [], user }) => {
         </div>
         
         {/* Bar Chart (Sensory-Friendly) */}
-        <div className="flex items-end justify-between gap-2 h-32">
-          {weeklyWins.map((wins, index) => {
-            const height = (wins / maxWins) * 100;
-            const today = new Date().getDay();
-            const isToday = index === today;
-            
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                <div className="relative w-full flex items-end justify-center h-24">
-                  <div
-                    className={`w-full rounded-t-lg ${
-                      isToday ? colors.primary : colors.secondary
-                    } ${
-                      reduceAnimations ? '' : 'transition-all duration-500'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  >
-                    {wins > 0 && (
-                      <div className="text-white text-xs font-bold text-center pt-1">
-                        {wins}
-                      </div>
-                    )}
+        {weeklyWins.every(w => w === 0) ? (
+          <div className="flex flex-col items-center justify-center h-32 gap-2">
+            <BarChart3 size={28} className="text-gray-300 dark:text-gray-600" />
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              <SmartText>No activity this week yet — let's change that!</SmartText>
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-end justify-between gap-2 h-32">
+            {weeklyWins.map((wins, index) => {
+              const height = (wins / maxWins) * 100;
+              const today = new Date().getDay();
+              const isToday = index === today;
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="relative w-full flex items-end justify-center h-24">
+                    <div
+                      className={`w-full rounded-t-lg ${
+                        isToday ? colors.primary : colors.secondary
+                      } ${reduceAnimations ? '' : 'transition-all duration-500'}`}
+                      style={{ height: `${Math.max(height, 4)}%` }}
+                    >
+                      {wins > 0 && (
+                        <div className="text-white text-xs font-bold text-center pt-1">{wins}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`text-xs font-medium ${
+                    isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    <SmartText>{days[index]}</SmartText>
                   </div>
                 </div>
-                <div className={`text-xs font-medium ${
-                  isToday 
-                    ? 'text-indigo-600 dark:text-indigo-400' 
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  <SmartText>{days[index]}</SmartText>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
         
         <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
           <p className="text-sm text-indigo-700 dark:text-indigo-300">

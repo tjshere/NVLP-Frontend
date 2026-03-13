@@ -5,6 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import StudentDashboard from './components/StudentDashboard';
 import LessonPlayer from './components/LessonPlayer';
 import CalmRoom from './components/CalmRoom';
+import Onboarding from './components/Onboarding';
 import { SensoryProvider, useSensory } from './context/SensoryContext';
 import api from './api';
 
@@ -157,7 +158,7 @@ const LoginForm = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center p-6 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-100 dark:bg-gray-950 flex items-center justify-center p-6 transition-colors duration-300">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md transition-colors duration-300">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2 text-center transition-colors duration-300">
             NVLP
@@ -173,16 +174,17 @@ const LoginForm = ({ onLoginSuccess }) => {
                 htmlFor="email" 
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300"
               >
-                Email
+                Email or Username
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+                  required: 'Email or username is required',
+                  validate: (value) => {
+                    // Allow plain usernames (no @) or valid emails
+                    if (!value.includes('@')) return true;
+                    return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) || 'Invalid email address';
                   },
                 })}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors duration-300 dark:bg-gray-700 dark:text-gray-100 ${
@@ -190,7 +192,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                     ? 'border-red-500 dark:border-red-400' 
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
-                placeholder="Enter your email"
+                placeholder="Email or username"
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -249,6 +251,10 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [selectedCompanion, setSelectedCompanion] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nvlp_companion')) || null; } catch { return null; }
+  });
   
   // Separate loading states for better UX
   const [isInitializing, setIsInitializing] = useState(true);
@@ -394,12 +400,28 @@ function App() {
   // Handle successful login
   const handleLoginSuccess = (userProfile, coursesData) => {
     console.log('🔄 handleLoginSuccess called:', { userProfile, coursesData, isMounted: isMountedRef.current });
-    // Don't check isMountedRef for login - we WANT this state update to proceed
     setUser(userProfile);
     setCourses(coursesData);
     setIsAuthenticated(true);
     setError(null);
+    // Show onboarding for first-time users (keyed by user id)
+    const onboardingKey = `nvlp_onboarding_${userProfile.id}_complete`;
+    if (!localStorage.getItem(onboardingKey)) {
+      setShowOnboarding(true);
+    }
     console.log('✅ State updated: isAuthenticated = true');
+  };
+
+  const handleOnboardingComplete = (companionId) => {
+    if (companionId) {
+      const companionData = { id: companionId, name: companionId === 'lucas' ? 'Lucas' : 'Dani' };
+      localStorage.setItem('nvlp_companion', JSON.stringify(companionData));
+      setSelectedCompanion(companionData);
+    }
+    if (user?.id) {
+      localStorage.setItem(`nvlp_onboarding_${user.id}_complete`, 'true');
+    }
+    setShowOnboarding(false);
   };
 
   // Handle logout - stable reference with useCallback for SensoryProvider
@@ -437,19 +459,28 @@ function App() {
   // Dashboard screen (authenticated) - pass handleLogout for centralized auth failure
   return (
     <SensoryProvider user={user} onAuthFailure={handleLogout}>
-      <AppContent 
-        user={user}
-        courses={courses}
-        isLoadingUser={isLoadingUser}
-        isLoadingCourses={isLoadingCourses}
-        onLogout={handleLogout}
-      />
+      {showOnboarding ? (
+        <Onboarding onComplete={handleOnboardingComplete} />
+      ) : (
+        <AppContent
+          user={user}
+          courses={courses}
+          isLoadingUser={isLoadingUser}
+          isLoadingCourses={isLoadingCourses}
+          onLogout={handleLogout}
+          selectedCompanion={selectedCompanion}
+          onCompanionChange={(c) => {
+            localStorage.setItem('nvlp_companion', JSON.stringify(c));
+            setSelectedCompanion(c);
+          }}
+        />
+      )}
     </SensoryProvider>
   );
 }
 
 // App Content with Sensory Context and Routes
-const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout }) => {
+const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout, selectedCompanion, onCompanionChange }) => {
   // Dark mode and reduce animations are now applied at the document level via SensoryContext
   
   return (
@@ -460,12 +491,14 @@ const AppContent = ({ user, courses, isLoadingUser, isLoadingCourses, onLogout }
         <Route 
           path="/" 
           element={
-            <StudentDashboard 
-              user={user} 
+            <StudentDashboard
+              user={user}
               courses={courses}
               isLoadingUser={isLoadingUser}
               isLoadingCourses={isLoadingCourses}
               onLogout={onLogout}
+              initialCompanion={selectedCompanion}
+              onCompanionChange={onCompanionChange}
             />
           } 
         />

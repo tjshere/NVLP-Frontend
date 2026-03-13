@@ -14,11 +14,11 @@ const CompanionWidget = ({ companion, onChatClick }) => {
       name: 'Lucas',
       icon: Bot,
       theme: {
-        gradient: 'from-blue-500 to-teal-500',
+        gradient: 'bg-blue-600',
         bg: 'bg-blue-50/50 dark:bg-blue-900/20',
         text: 'text-blue-700 dark:text-blue-300',
         border: 'border-blue-200 dark:border-blue-800',
-        button: 'bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600',
+        button: 'bg-blue-600 hover:bg-blue-700',
       },
       greeting: 'Ready to work.',
       style: 'Structured & Focused',
@@ -28,11 +28,11 @@ const CompanionWidget = ({ companion, onChatClick }) => {
       name: 'Dani',
       icon: Sparkles,
       theme: {
-        gradient: 'from-pink-500 to-purple-500',
+        gradient: 'bg-pink-600',
         bg: 'bg-pink-50/50 dark:bg-pink-900/20',
         text: 'text-pink-700 dark:text-pink-300',
         border: 'border-pink-200 dark:border-pink-800',
-        button: 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600',
+        button: 'bg-pink-600 hover:bg-pink-700',
       },
       greeting: 'Let\'s make some progress.',
       style: 'Encouraging & Supportive',
@@ -46,7 +46,7 @@ const CompanionWidget = ({ companion, onChatClick }) => {
     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-xl">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${companionData.theme.gradient} flex items-center justify-center shadow-md ${
+        <div className={`w-12 h-12 rounded-full ${companionData.theme.gradient} flex items-center justify-center shadow-md ${
           reduceAnimations ? '' : 'animate-pulse'
         }`}>
           <IconComponent className="w-6 h-6 text-white" strokeWidth={2} />

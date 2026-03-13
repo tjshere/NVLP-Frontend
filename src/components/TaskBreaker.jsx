@@ -106,60 +106,79 @@ const TaskBreaker = ({ onTasksChange }) => {
       }
       return task;
     });
-    
+
     setTasks(updatedTasks);
-    
+
+    // Toast for checking a step (not unchecking)
+    if (!currentStatus) {
+      toast.success('Step done!', { duration: 1500, position: 'bottom-right', icon: '✓' });
+    }
+
     try {
-      // Backend sync
       await api.updateTaskStep(taskId, stepId, !currentStatus);
-      
-      // Check if all steps are complete and update task completion
+
       const task = updatedTasks.find(t => t.id === taskId);
       const allStepsComplete = task?.steps && Array.isArray(task.steps) && task.steps.every(s => s.is_step_complete);
-      
+
       if (allStepsComplete && !task.is_complete) {
         await api.patchTask(taskId, { is_complete: true });
-        // Update local state
         setTasks(prevTasks => prevTasks.map(t =>
           t.id === taskId ? { ...t, is_complete: true } : t
         ));
-        toast.success('🎉 Task completed!', {
-          icon: '✅',
-          duration: 3000,
+        toast.success('Task complete! Great work.', {
+          duration: 4000,
+          position: 'bottom-right',
+          icon: '🎉',
         });
       }
-      
-      // Notify parent component
+
       if (onTasksChange) onTasksChange();
     } catch (error) {
       console.error('Failed to update step:', error);
-      // Rollback on error
       setTasks(tasks);
-      toast.error('Failed to update step. Changes reverted.');
+      toast.error('Failed to update step. Changes reverted.', { position: 'bottom-right' });
     }
   };
   
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) {
-      return;
-    }
-    
-    // Optimistic delete
+  const handleDeleteTask = (taskId) => {
     const previousTasks = [...tasks];
+    // Optimistic delete
     setTasks(tasks.filter(t => t.id !== taskId));
-    
-    try {
-      await api.deleteTask(taskId);
-      toast.success('Task deleted');
-      
-      // Notify parent component
-      if (onTasksChange) onTasksChange();
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-      // Rollback on error
-      setTasks(previousTasks);
-      toast.error('Failed to delete task');
-    }
+
+    let undone = false;
+
+    toast(
+      (t) => (
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-800 dark:text-gray-100">Task deleted</span>
+          <button
+            onClick={() => {
+              undone = true;
+              setTasks(previousTasks);
+              toast.dismiss(t.id);
+            }}
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 underline"
+          >
+            Undo
+          </button>
+        </div>
+      ),
+      {
+        duration: 4000,
+        position: 'bottom-right',
+        onAutoClose: async () => {
+          if (undone) return;
+          try {
+            await api.deleteTask(taskId);
+            if (onTasksChange) onTasksChange();
+          } catch (error) {
+            console.error('Failed to delete task:', error);
+            setTasks(previousTasks);
+            toast.error('Failed to delete task', { position: 'bottom-right' });
+          }
+        },
+      }
+    );
   };
   
   const addStepField = () => {
@@ -305,11 +324,25 @@ const TaskBreaker = ({ onTasksChange }) => {
       
       {/* Empty State */}
       {!isLoading && tasks.length === 0 && (
-        <div className="text-center py-8">
-          <ListTodo size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">
-            <SmartText>No tasks yet. Break down your first big task into smaller steps!</SmartText>
+        <div className="text-center py-10">
+          <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <ListTodo size={32} className="text-indigo-400 dark:text-indigo-500" />
+          </div>
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <SmartText>No tasks yet</SmartText>
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 max-w-xs mx-auto">
+            <SmartText>Big tasks feel overwhelming. Break yours into small, doable steps.</SmartText>
           </p>
+          {!showCreateForm && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm transition-colors"
+            >
+              <Plus size={16} />
+              <SmartText>Break down a task</SmartText>
+            </button>
+          )}
         </div>
       )}
       

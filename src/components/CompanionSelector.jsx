@@ -13,12 +13,12 @@ const CompanionSelector = ({ onSelect, isOpen, onClose }) => {
       name: 'Lucas',
       icon: Bot,
       theme: {
-        primary: 'from-blue-500 to-teal-500',
+        primary: 'bg-blue-600',
         bg: 'bg-blue-100 dark:bg-blue-900/30',
         text: 'text-blue-700 dark:text-blue-300',
         border: 'border-blue-300 dark:border-blue-700',
         hover: 'hover:border-blue-500 dark:hover:border-blue-400',
-        button: 'bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600',
+        button: 'bg-blue-600 hover:bg-blue-700',
       },
       style: 'Structured & Focused',
       greeting: 'All systems go. What\'s the plan?',
@@ -28,12 +28,12 @@ const CompanionSelector = ({ onSelect, isOpen, onClose }) => {
       name: 'Dani',
       icon: Sparkles,
       theme: {
-        primary: 'from-pink-500 to-purple-500',
+        primary: 'bg-pink-600',
         bg: 'bg-pink-100 dark:bg-pink-900/30',
         text: 'text-pink-700 dark:text-pink-300',
         border: 'border-pink-300 dark:border-pink-700',
         hover: 'hover:border-pink-500 dark:hover:border-pink-400',
-        button: 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600',
+        button: 'bg-pink-600 hover:bg-pink-700',
       },
       style: 'Encouraging & Supportive',
       greeting: 'Hey there! Ready to start?',
@@ -90,7 +90,7 @@ const CompanionSelector = ({ onSelect, isOpen, onClose }) => {
                 {/* Selection Indicator */}
                 {isSelected && (
                   <div className="absolute top-4 right-4">
-                    <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${companion.theme.primary} flex items-center justify-center`}>
+                    <div className={`w-6 h-6 rounded-full ${companion.theme.primary} flex items-center justify-center`}>
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -99,7 +99,7 @@ const CompanionSelector = ({ onSelect, isOpen, onClose }) => {
                 )}
 
                 {/* Avatar Icon */}
-                <div className={`w-20 h-20 rounded-full bg-gradient-to-r ${companion.theme.primary} flex items-center justify-center mb-6 shadow-lg ${
+                <div className={`w-20 h-20 rounded-full ${companion.theme.primary} flex items-center justify-center mb-6 shadow-lg ${
                   reduceAnimations ? '' : 'transition-transform duration-300'
                 }`}>
                   <IconComponent className="w-10 h-10 text-white" strokeWidth={2} />
@@ -134,7 +134,7 @@ const CompanionSelector = ({ onSelect, isOpen, onClose }) => {
             disabled={!selectedCompanion}
             className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-300 shadow-lg ${
               selectedCompanion
-                ? `bg-gradient-to-r ${companions[selectedCompanion].theme.primary} hover:shadow-xl ${reduceAnimations ? '' : 'hover:scale-105'}`
+                ? `${companions[selectedCompanion].theme.primary} hover:shadow-xl ${reduceAnimations ? '' : 'hover:scale-105'}`
                 : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
             }`}
           >

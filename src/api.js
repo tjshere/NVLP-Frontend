@@ -11,6 +11,7 @@ const axiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
   timeout: 5000, // 5 second timeout (reduced for faster failure detection)
 });
@@ -544,6 +545,15 @@ Big O notation describes the time and space complexity of algorithms.
   // Patch existing progress record
   patchProgress: async (progressId, data) => {
     const response = await axiosInstance.patch(`/progress/${progressId}/`, data);
+    return response.data;
+  },
+
+  // AI Companion Chat
+  sendChat: async (message, personaName) => {
+    const response = await axiosInstance.post('/chat/', {
+      message,
+      persona_name: personaName.toUpperCase(),
+    });
     return response.data;
   },
 
